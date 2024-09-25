@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Triangle Color Changer</title>
+    <style>
+        canvas { border: 1px solid black; }
+        #controls { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <canvas id="glcanvas" width="500" height="500"></canvas>
+    <div id="controls">
+        <button onclick="changeColor([1.0, 0.0, 0.0, 1.0])">Button 1</button>
+        <button onclick="changeColor([0.0, 0.0, 1.0, 1.0])">Button 2</button>
+        <button onclick="changeColor([0.0, 1.0, 0.0, 1.0])">Button 3</button>
+        <button onclick="resetColor()">Reset</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("glcanvas");
+        const gl = canvas.getContext("webgl");
+
+        if (!gl) {
+            console.error("WebGL not supported");
+        }
+
+        const vsSource = `
+            attribute vec4 aVertexPosition;
+            void main(void) {
+                gl_Position = aVertexPosition;
+            }
+        `;
+
+        const fsSource = `
+            precision mediump float;
+            uniform vec4 uColor;
+            void main(void) {
+                gl_FragColor = uColor;
+            }
+        `;
+
+        function initShaderProgram(vsSource, fsSource) {
+            const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vertexShader, vsSource);
+            gl.compileShader(vertexShader);
+
+            const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fragmentShader, fsSource);
+            gl.compileShader(fragmentShader);
+
+            const shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
+
+            return shaderProgram;
+        }
+
+        const shaderProgram = initShaderProgram(vsSource, fsSource);
+        gl.useProgram(shaderProgram);
+
+        const vertices = new Float32Array([
+            0.0,  0.5,
+           -0.5, -0.5,
+            0.5, -0.5,
+        ]);
+
+        const vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        const position = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(position);
+
+        let currentColor = [1.0, 1.0, 1.0, 1.0];
+        const colorLocation = gl.getUniformLocation(shaderProgram, "uColor");
+
+        function changeColor(color) {
+            currentColor = color;
+            draw();
+        }
+
+        function resetColor() {
+            currentColor = [1.0, 1.0, 1.0, 1.0]; 
+            draw();
+        }
+
+        function draw() {
+            gl.clearColor(0.0, 0.0, 0.0, 1.0); 
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.uniform4fv(colorLocation, currentColor);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+        }
+        draw();
+    </script>
+</body>
+</html>
